@@ -1,18 +1,15 @@
 #!/bin/bash
+
 TAR=$(which tar)
 GZIP=$(which gzip)
 
 DEVSTACK_LOGS="/opt/stack/logs/screen"
 DEVSTACK_BUILD_LOG="/opt/stack/logs/stack.sh.txt"
-WIN_LOGS="/openstack/logs"
 TEMPEST_LOGS="/home/ubuntu/tempest"
-WIN_CONFIGS="/openstack/config/etc"
 
 LOG_DST="/home/ubuntu/aggregate"
 LOG_DST_DEVSTACK="$LOG_DST/devstack_logs"
-LOG_DST_WIN="$LOG_DST/windows_logs"
 CONFIG_DST_DEVSTACK="$LOG_DST/devstack_config"
-CONFIG_DST_WIN="$LOG_DST/windows_config"
 
 function emit_error() {
     echo "ERROR: $1"
@@ -65,38 +62,6 @@ function archive_devstack() {
     #/var/log/syslog
 }
 
-function archive_windows_logs() {
-    if [ -d "$WIN_LOGS" ]
-    then
-        mkdir -p "$LOG_DST_WIN"
-
-        for i in `ls -A "$WIN_LOGS"`
-        do
-            if [ -d "$WIN_LOGS/$i" ]
-            then            
-                mkdir -p "$LOG_DST_WIN/$i"
-                for j in `ls -A "$WIN_LOGS/$i"`;
-                do
-                    $GZIP -c "$WIN_LOGS/$i/$j" > "$LOG_DST_WIN/$i/$j.gz" || emit_warning "Failed to archive $WIN_LOGS/$i/$j"
-                done
-            else
-                $GZIP -c "$WIN_LOGS/$i" > "$LOG_DST_WIN/$i.gz" || emit_warning "Failed to archive $WIN_LOGS/$i"
-            fi
-        done
-    fi
-}
-
-function archive_windows_configs(){
-    if [ -d "$WIN_CONFIGS" ]
-    then
-        mkdir -p $CONFIG_DST_WIN
-        for i in `ls -A "$WIN_CONFIGS"`
-        do
-            $GZIP -c "$WIN_CONFIGS/$i" > "$CONFIG_DST_WIN/$i.gz" || emit_warning "Failed to archive $WIN_CONFIGS/$i"
-        done
-    fi
-}
-
 function archive_tempest_files() {
     for i in `ls -A $TEMPEST_LOGS`
     do
@@ -114,8 +79,6 @@ popd
 mkdir -p "$LOG_DST"
 
 archive_devstack
-archive_windows_configs
-archive_windows_logs
 archive_tempest_files
 
 pushd "$LOG_DST"

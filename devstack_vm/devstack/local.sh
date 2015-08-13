@@ -1,11 +1,12 @@
 #!/bin/bash
+
 set -e
 
 source /home/ubuntu/devstack/functions
 source /home/ubuntu/devstack/functions-common
 
 nova flavor-delete 100
-nova flavor-create manila-service-flavor 100 2048 20 2
+nova flavor-create manila-service-flavor 100 2048 25 2
 
 # Add DNS config to the private network
 subnet_id=`neutron net-show private | grep subnets | awk '{print $4}'`
@@ -13,10 +14,6 @@ neutron subnet-update $subnet_id --dns_nameservers list=true 8.8.8.8 8.8.4.4
 
 TEMPEST_CONFIG=/opt/stack/tempest/etc/tempest.conf
 
-iniset $TEMPEST_CONFIG cli enabled True
-
-iniset $TEMPEST_CONFIG identity uri http://127.0.0.1:5000/v2.0/
-iniset $TEMPEST_CONFIG identity uri_v3 http://127.0.0.1:5000/v3/
 iniset $TEMPEST_CONFIG identity username demo
 iniset $TEMPEST_CONFIG identity password Passw0rd
 iniset $TEMPEST_CONFIG identity tenant_name demo

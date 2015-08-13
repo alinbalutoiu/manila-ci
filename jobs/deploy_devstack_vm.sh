@@ -1,11 +1,17 @@
 #!/bin/bash
+
+function emit_error(){
+    echo "$1"
+    exit 1
+}
+
 run_devstack (){
     # run devstack
     echo "Checking nova console-log for errors before installing devstack"
     nova console-log "$NAME"
     echo ""
     echo "Run stack.sh on devstack"
-    run_ssh_cmd_with_retry ubuntu@$DEVSTACK_FLOATING_IP $DEVSTACK_SSH_KEY "source /home/ubuntu/keystonerc; /home/ubuntu/bin/run_devstack.sh $JOB_TYPE" 5 
+    run_ssh_cmd_with_retry ubuntu@$DEVSTACK_FLOATING_IP $DEVSTACK_SSH_KEY "source /home/ubuntu/keystonerc; /home/ubuntu/bin/run_devstack.sh" 5
 
     # run post_stack
     echo "Run post_stack scripts on devstack"
@@ -14,13 +20,13 @@ run_devstack (){
 
 set -e
 #UUID=$(python -c "import uuid; print uuid.uuid4().hex")
-export NAME="manila-devstack-$ZUUL_UUID-$JOB_TYPE"
-echo NAME=$NAME > /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+export NAME="manila-devstack-$ZUUL_UUID"
+echo NAME=$NAME > /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
-echo DEVSTACK_SSH_KEY=$DEVSTACK_SSH_KEY >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo DEVSTACK_SSH_KEY=$DEVSTACK_SSH_KEY >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
 NET_ID=$(nova net-list | grep 'private' | awk '{print $2}')
-echo NET_ID=$NET_ID >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo NET_ID=$NET_ID >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
 echo DEVSTACK_FLOATING_IP=$DEVSTACK_FLOATING_IP
 echo NAME=$NAME
@@ -58,18 +64,18 @@ do
     COUNT=$(($COUNT + 1))
 done
 
-echo FIXED_IP=$FIXED_IP >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo FIXED_IP=$FIXED_IP >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
 DEVSTACK_FLOATING_IP=$(nova floating-ip-create public | awk '{print $4}' | sed '/^$/d' | tail -n 1 ) || echo "Failed to allocate floating IP"
 if [ -z "$DEVSTACK_FLOATING_IP" ]
 then
     exit 1
 fi
-echo DEVSTACK_FLOATING_IP=$DEVSTACK_FLOATING_IP >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo DEVSTACK_FLOATING_IP=$DEVSTACK_FLOATING_IP >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
 export VMID=`nova show $NAME | grep -w id | awk '{print $4}'`
 
-echo VM_ID=$VMID >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo VM_ID=$VMID >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 echo VM_ID=$VMID
 
 exec_with_retry 15 5 "nova floating-ip-associate $NAME $DEVSTACK_FLOATING_IP"
@@ -82,8 +88,8 @@ sleep 5
 
 # Add 2 more interfaces after successful SSH
 echo "Adding two more network interfaces to devstack VM"
-nova interface-attach --net-id "$NET_ID" "$NAME"
-nova interface-attach --net-id "$NET_ID" "$NAME"
+nova interface-attach --net-id "$NET_ID" "$NAME" || emit_error "Failed to attach interface"
+nova interface-attach --net-id "$NET_ID" "$NAME" || emit_error "Failed to attach interface"
 
 echo "Copy scripts to devstack VM"
 scp -v -r -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -i $DEVSTACK_SSH_KEY /usr/local/src/manila-ci/devstack_vm/* ubuntu@$DEVSTACK_FLOATING_IP:/home/ubuntu/
@@ -138,7 +144,7 @@ echo "Ensure configs are copied over"
 scp -v -r -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null" -i $DEVSTACK_SSH_KEY /usr/local/src/manila-ci/devstack_vm/devstack/* ubuntu@$DEVSTACK_FLOATING_IP:/home/ubuntu/devstack
 
 ZUUL_SITE=`echo "$ZUUL_URL" |sed 's/.\{2\}$//'`
-echo ZUUL_SITE=$ZUUL_SITE >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.$JOB_TYPE.txt
+echo ZUUL_SITE=$ZUUL_SITE >> /home/jenkins-slave/runs/devstack_params.$ZUUL_UUID.txt
 
 # run_ssh_cmd_with_retry ubuntu@$DEVSTACK_FLOATING_IP $DEVSTACK_SSH_KEY "mkdir -p -m 777 /openstack/volumes"
 

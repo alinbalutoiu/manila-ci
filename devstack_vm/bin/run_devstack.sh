@@ -15,6 +15,9 @@ sudo sed -i '2i127.0.0.1  '$HOSTNAME'' /etc/hosts
 sudo pip install -U six
 sudo pip install -U kombu
 
+# Install PyWinrm for manila
+sudo pip install -U pywinrm
+
 # Running an extra apt-get update
 sudo apt-get update --assume-yes
 
@@ -77,11 +80,31 @@ cd /home/ubuntu/devstack
 git pull
 sudo easy_install -U pip
 
+MANILA_LOC="/home/ubuntu/manila"
+# Clean previous manila clone if any
+sudo rm -rf "$MANILA_LOC"
+
+cd /home/ubuntu/
+git clone https://github.com/OpenStack/manila
+
+cd /home/ubuntu/manila
+git config --global user.email "microsoft_manila_ci@microsoft.com"
+git config --global user.name "Microsoft Manila CI"
+
+# download the patch to be tested
+git pull --no-edit https://review.openstack.org/openstack/manila refs/changes/54/200154/11
+
 cd /home/ubuntu/devstack
 
 ./unstack.sh
 
 nohup ./stack.sh > /opt/stack/logs/stack.sh.txt 2>&1 &
 pid=$!
-wait $pid
+wait "$pid"
+stack_status=$?
 cat /opt/stack/logs/stack.sh.txt
+if [ $stack_status -ne 0 ]
+then
+    echo "stack_status is: $stack_status"
+    exit 1
+fi

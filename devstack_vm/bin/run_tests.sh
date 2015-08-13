@@ -19,6 +19,7 @@ git checkout $TEMPEST_COMMIT
 # Install Manila Tempest integration
 cp -r /home/ubuntu/manila/contrib/tempest/tempest/* $TEMPEST_BASE/tempest
 
+cd /opt/stack/tempest
 # run all manila tests, api and scenario tests
 testr list-tests | grep share | grep -v test_image > "$RUN_TESTS_LIST" || echo "failed to generate list of tests"
 
