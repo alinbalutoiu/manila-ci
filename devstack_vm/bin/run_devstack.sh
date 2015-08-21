@@ -1,7 +1,5 @@
 #!/bin/bash
 
-job_type=$1
-
 set -x
 set -e
 sudo ifconfig eth1 promisc up

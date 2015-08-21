@@ -20,10 +20,9 @@ git checkout $TEMPEST_COMMIT
 cp -r /home/ubuntu/manila/contrib/tempest/tempest/* $TEMPEST_BASE/tempest
 
 cd /opt/stack/tempest
-# run all manila tests, api and scenario tests
-testr list-tests | grep share | grep -v test_image > "$RUN_TESTS_LIST" || echo "failed to generate list of tests"
+testr list-tests | grep share | grep -Ev "tempest.api.image|tempest.scenario" > "$RUN_TESTS_LIST" || echo "failed to generate list of tests"
 
-testr run --parallel --subunit --load-list=$RUN_TESTS_LIST | subunit-2tol > /home/ubuntu/tempest/subunit-output.log 2>&1
+testr run --subunit --load-list=$RUN_TESTS_LIST | subunit-2to1 > /home/ubuntu/tempest/subunit-output.log 2>&1
 cat /home/ubuntu/tempest/subunit-output.log | /opt/stack/tempest/tools/colorizer.py > /home/ubuntu/tempest/tempest-output.log 2>&1
 # testr exits with status 0. colorizer.py actually sets correct exit status
 RET=$?
