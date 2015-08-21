@@ -14,7 +14,7 @@ sudo pip install -U six
 sudo pip install -U kombu
 
 # Install PyWinrm for manila
-sudo pip install -U pywinrm
+sudo pip install -U git+https://github.com/petrutlucian94/pywinrm
 
 # Running an extra apt-get update
 sudo apt-get update --assume-yes
